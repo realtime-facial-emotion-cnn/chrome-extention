@@ -1,0 +1,188 @@
+//taking user mic audio and diplay audio then combine those(sequential order presever automatically) create a file and
+call the audio to text endpoit
+
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Tab Audio Recorder</title>
+</head>
+
+<body>
+  <button id="startBtn">Start Recording Tab Audio</button>
+  <button id="stopBtn">Stop Recording</button>
+  <button id="insightBtn">Get Insights</button>
+  <button id="startVideoBtn">Start Video Recording</button>
+  <button id="stopVideoBtn">Stop Video Recording</button>
+
+  <script>
+    let audioRecoder;
+    let videoRecorder;
+
+    let recordedChunks = [];
+    let recordedAudioBlob = null;
+
+    let videoChunks = [];
+    let recordedVideoBlob = null;
+
+
+    //audio handling task--------------------------------------------------------------------
+
+    document.getElementById("startBtn").onclick = async () => {
+      const tabStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true
+      });
+
+      const micStream = await navigator.mediaDevices.getUserMedia({
+        audio: true
+      });
+
+      const audioContext = new AudioContext();
+      const destination = audioContext.createMediaStreamDestination();
+
+      const tabSource = audioContext.createMediaStreamSource(tabStream);
+      const micSource = audioContext.createMediaStreamSource(micStream);
+
+      tabSource.connect(destination);
+      micSource.connect(destination);
+
+
+
+      audioRecoder = new MediaRecorder(destination.stream, {
+        mimeType: "audio/webm"
+      });
+
+      recordedChunks = [];
+
+      audioRecoder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunks.push(event.data);
+        }
+      };
+
+
+      audioRecoder.onstop = () => {
+        recordedAudioBlob = new Blob(recordedChunks, {
+          type: "audio/webm"
+        });
+      };
+
+
+      audioRecoder.start();
+      console.log("Recording started");
+    };
+
+    document.getElementById("stopBtn").onclick = () => {
+      audioRecoder.stop();
+      console.log("Recording stopped");
+    };
+    //---------------------------------------------------------------------------------------
+
+
+    //vedio handling task----------------------------------------------------------------------
+
+    document.getElementById("startVideoBtn").onclick = async () => {
+      const tabVideoStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false
+      });
+
+      videoRecorder = new MediaRecorder(tabVideoStream, {
+        mimeType: "video/webm"
+      });
+
+      videoChunks = [];
+
+      videoRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          videoChunks.push(event.data);
+        }
+      };
+
+      videoRecorder.onstop = () => {
+        recordedVideoBlob = new Blob(videoChunks, {
+          type: "video/webm"
+        });
+
+        console.log("Video ready");
+      };
+
+      videoRecorder.start();
+    };
+
+    document.getElementById("stopVideoBtn").onclick = () => {
+      videoRecorder.stop();
+    };
+    //-----------------------------------------------------------------------------------------
+
+
+
+    // call the apis for audio and vedio processing
+
+    document.getElementById("insightBtn").onclick = async () => {
+
+
+      // handle audio-------------------------------------------------------
+      const audio_text = await handle_audio();
+
+      //handling vedio--------------------------------------
+      const video_facial_summary_text = await handle_vedio();
+
+      const finalSummary = {
+        audioSummary: audio_text,
+        videoSummary: video_facial_summary_text
+      };
+
+      localStorage.setItem("meetingSummary", JSON.stringify(finalSummary));
+
+      window.location.href = "summary.html";
+
+    };
+
+
+    const handle_audio = async () => {
+      if (!recordedAudioBlob) {
+        alert("No recording available");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("audio", recordedAudioBlob, "meeting-audio.webm");
+
+      const response = await fetch("http://localhost:8000/analyze-audio", {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await response.json();
+
+      return result;
+
+    }
+
+    const handle_vedio = async () => {
+      if (!recordedVideoBlob) {
+        alert("No video recording available");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("video", recordedVideoBlob, "meeting-video.webm");
+
+      const response = await fetch("http://localhost:8000/analyze-video", {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await response.json();
+
+      return result;
+    }
+
+
+
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-multipart
+tensorflow
+opencv-python
+faster-whisper
+langchain
+langchain-openai
+python-dotenv

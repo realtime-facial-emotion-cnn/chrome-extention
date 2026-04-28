@@ -1,0 +1,29 @@
+<script>
+
+  //calling llm
+  
+  async function loadSummary() {
+    const audioResult = JSON.parse(localStorage.getItem("audioResult"));
+    const videoResult = JSON.parse(localStorage.getItem("videoResult"));
+
+    const response = await fetch("http://localhost:8000/api/session/summary", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        transcript: audioResult.transcript,
+        emotion_summary: videoResult.emotion_summary
+      })
+    });
+
+    const summary = await response.json();
+
+    document.body.innerHTML = `
+      <h1>Meeting Summary</h1>
+      <pre>${JSON.stringify(summary, null, 2)}</pre>
+    `;
+  }
+
+  loadSummary();
+</script>
