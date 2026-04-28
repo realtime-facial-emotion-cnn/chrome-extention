@@ -7,7 +7,7 @@ This document outlines the task responsibilities for the CNN Facial Motion proje
 1. **Train CNN** - Niluminda
 2. **Simple FastAPI** - Dimuthu
 3. **Browser extension popup** - Oshini
-4. **Summary page** - Ishara
+4. **Summary page** - Irasha
 
 ## Notes
 
