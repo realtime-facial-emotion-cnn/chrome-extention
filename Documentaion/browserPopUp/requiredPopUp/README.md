@@ -58,32 +58,3 @@ To turn this into a browser extension popup, you would typically:
 }
 ```
 
-4. Load the extension as an unpacked extension in Chrome or a Chromium-based browser.
-5. Open the popup and use the buttons to start/stop recording and request insights.
-
-## Required Backend Endpoints
-
-The popup code expects a local analysis service running at:
-
-- `http://localhost:8000/analyze-audio`
-- `http://localhost:8000/analyze-video`
-
-Both endpoints should accept `POST` requests with `FormData` containing either:
-
-- `audio` with the audio `webm` file
-- `video` with the video `webm` file
-
-The API should return JSON results used by the popup.
-
-## Recommended Next Steps
-
-- Rename `Documentaion/handleBrowserExtention.md` to `popup.html` or copy its contents into a proper extension HTML file.
-- Add a `manifest.json` to the root of the extension project.
-- Implement or run a backend service at `localhost:8000` to handle audio/video analysis.
-- Create `summary.html` to present the final summary stored in `localStorage`.
-
-## Important Notes
-
-- This README is documentation only; the code itself is unchanged.
-- The popup code is currently stored as an HTML document inside the documentation folder.
-- The `experiment` folder is unrelated to this popup extension documentation and should be ignored for this guide.
