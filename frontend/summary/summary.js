@@ -12,8 +12,7 @@
  *  - If you move the backend to a different port/host, update API_URL
  */
 
-const API_URL = "http://localhost:8000/api/session/summary";
-
+const API_URL = "http://127.0.0.1:8000/api/session/summary";
 // ─── Dummy data (fallback when nothing else is available) ────────────────────
 const DUMMY_DATA = {
   grammar_score:      0.85,
