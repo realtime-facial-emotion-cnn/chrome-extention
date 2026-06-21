@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Meeting Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="summary.css"/>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <span class="brand-name">MeetingIQ <small style="font-size: 0.5em; opacity: 0.6;">by Irasha</small></span>
+      </div>
+      <div class="header-right">
+        <span id="dummy-badge" class="badge badge-warning" style="display:none">⚠ Using dummy data</span>
+        <button id="rerun-btn" class="btn-rerun">Re-run Analysis</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Loading state -->
+  <div id="loading-state" class="loading-state">
+    <div class="spinner"></div>
+    <p>Analysing your session…</p>
+  </div>
+
+  <!-- Error state -->
+  <div id="error-state" class="error-state" style="display:none">
+    <p id="error-msg">Something went wrong.</p>
+    <button onclick="loadData()">Try again</button>
+  </div>
+
+  <!-- Main content -->
+  <main id="main-content" class="main" style="display:none">
+
+    <!-- Score cards row -->
+    <section class="scores-section">
+      <h2 class="section-label">Performance Scores</h2>
+      <div class="scores-grid">
+        <div class="score-card" id="card-grammar">
+          <div class="score-ring-wrap">
+            <svg class="score-ring" viewBox="0 0 80 80">
+              <circle class="ring-bg" cx="40" cy="40" r="32"/>
+              <circle class="ring-fill" cx="40" cy="40" r="32" id="ring-grammar"/>
+            </svg>
+            <span class="score-number" id="val-grammar">–</span>
+          </div>
+          <div class="score-label">Grammar</div>
+        </div>
+        <div class="score-card" id="card-fluency">
+          <div class="score-ring-wrap">
+            <svg class="score-ring" viewBox="0 0 80 80">
+              <circle class="ring-bg" cx="40" cy="40" r="32"/>
+              <circle class="ring-fill" cx="40" cy="40" r="32" id="ring-fluency"/>
+            </svg>
+            <span class="score-number" id="val-fluency">–</span>
+          </div>
+          <div class="score-label">Fluency</div>
+        </div>
+        <div class="score-card" id="card-confidence">
+          <div class="score-ring-wrap">
+            <svg class="score-ring" viewBox="0 0 80 80">
+              <circle class="ring-bg" cx="40" cy="40" r="32"/>
+              <circle class="ring-fill" cx="40" cy="40" r="32" id="ring-confidence"/>
+            </svg>
+            <span class="score-number" id="val-confidence">–</span>
+          </div>
+          <div class="score-label">Confidence</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Emotion + Observation row -->
+    <section class="emotion-section">
+      <div class="emotion-chart-card">
+        <h2 class="section-label">Emotion Breakdown</h2>
+        <div class="emotion-bars" id="emotion-bars">
+          <!-- filled by JS -->
+        </div>
+      </div>
+      <div class="observation-card">
+        <h2 class="section-label">Emotion Observation</h2>
+        <p id="emotion-observation" class="observation-text">–</p>
+      </div>
+    </section>
+
+    <!-- Strengths & Improvements -->
+    <section class="feedback-section">
+      <div class="feedback-card strengths-card">
+        <div class="feedback-icon">✓</div>
+        <h2 class="section-label">Strengths</h2>
+        <ul id="strengths-list" class="feedback-list"></ul>
+      </div>
+      <div class="feedback-card improvements-card">
+        <div class="feedback-icon">↑</div>
+        <h2 class="section-label">Areas to Improve</h2>
+        <ul id="improvements-list" class="feedback-list"></ul>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="summary.js"></script>
+</body>
+</html>
