@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Meeting Insights</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="summary.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <div class="back-btn" onclick="history.back()">← Back</div>
+      <h1 class="page-title">Meeting Insights</h1>
+    </header>
+
+    <section class="card">
+      <div class="card-label">AUDIO ANALYSIS</div>
+      <div class="scores-row">
+        <div class="score-item">
+          <div class="score-ring">
+            <svg viewBox="0 0 60 60"><circle class="bg" cx="30" cy="30" r="25"/><circle class="fg" id="grammarArc" cx="30" cy="30" r="25"/></svg>
+            <span class="score-num" id="grammarNum">—</span>
+          </div>
+          <span class="score-name">Grammar</span>
+        </div>
+        <div class="score-item">
+          <div class="score-ring">
+            <svg viewBox="0 0 60 60"><circle class="bg" cx="30" cy="30" r="25"/><circle class="fg" id="fluencyArc" cx="30" cy="30" r="25"/></svg>
+            <span class="score-num" id="fluencyNum">—</span>
+          </div>
+          <span class="score-name">Fluency</span>
+        </div>
+        <div class="score-item">
+          <div class="score-ring">
+            <svg viewBox="0 0 60 60"><circle class="bg" cx="30" cy="30" r="25"/><circle class="fg" id="confidenceArc" cx="30" cy="30" r="25"/></svg>
+            <span class="score-num" id="confidenceNum">—</span>
+          </div>
+          <span class="score-name">Confidence</span>
+        </div>
+      </div>
+      <div class="text-block">
+        <div class="text-label">✦ Strengths</div>
+        <div class="text-content" id="strengthsText">—</div>
+      </div>
+      <div class="text-block danger">
+        <div class="text-label">⚡ Improvements</div>
+        <div class="text-content" id="improvementsText">—</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-label">FACIAL EMOTION ANALYSIS</div>
+      <div class="emotion-observation" id="emotionObservation">—</div>
+      <div class="emotion-bars" id="emotionBars"></div>
+    </section>
+  </div>
+  <script src="summary.js"></script>
+</body>
+</html>
