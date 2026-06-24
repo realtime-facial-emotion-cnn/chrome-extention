@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Meeting Recorder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css" />
+  <style>
+    body { width: 100vw; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .app { width: 380px; }
+    .info-text { display: none; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="logo">
+        <div class="logo-dot"></div>
+        <span>MeetingLens</span>
+      </div>
+      <div class="status-badge" id="statusBadge">IDLE</div>
+    </header>
+
+    <div class="visualizer-wrap">
+      <canvas id="audioVisualizer" width="320" height="60"></canvas>
+      <div class="vis-label" id="visLabel">No active recording</div>
+    </div>
+
+    <div class="section-label">AUDIO</div>
+    <div class="btn-row">
+      <button class="btn btn-start" id="startAudioBtn">
+        <span class="btn-icon">🎙</span>
+        <span>Start Audio</span>
+      </button>
+      <button class="btn btn-stop" id="stopAudioBtn" disabled>
+        <span class="btn-icon">⏹</span>
+        <span>Stop Audio</span>
+      </button>
+    </div>
+
+    <div class="section-label">VIDEO</div>
+    <div class="btn-row">
+      <button class="btn btn-start" id="startVideoBtn">
+        <span class="btn-icon">🎥</span>
+        <span>Start Video</span>
+      </button>
+      <button class="btn btn-stop" id="stopVideoBtn" disabled>
+        <span class="btn-icon">⏹</span>
+        <span>Stop Video</span>
+      </button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="track-status">
+      <div class="track" id="trackAudio">
+        <div class="track-dot"></div>
+        <span>Audio</span>
+        <span class="track-state">not recorded</span>
+      </div>
+      <div class="track" id="trackVideo">
+        <div class="track-dot"></div>
+        <span>Video</span>
+        <span class="track-state">not recorded</span>
+      </div>
+    </div>
+
+    <button class="btn btn-insights" id="insightBtn">
+      <span class="btn-icon">✦</span>
+      <span>Get Insights</span>
+    </button>
+
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <span id="loaderText">Analyzing meeting...</span>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <script src="recorder.js"></script>
+</body>
+</html>
