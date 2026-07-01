@@ -2,9 +2,12 @@
   "manifest_version": 3,
   "name": "performance analyzer",
   "version": "1.0",
-  "description": "performance analyzer",
+  "description": "Meeting performance analyzer",
 
-  "permissions": [],
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
 
   "action": {
     "default_popup": "popup.html"
