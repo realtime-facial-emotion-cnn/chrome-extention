@@ -1,28 +1,10 @@
-# ── Core API framework ──────────────────────────────────────────────────────
-fastapi==0.111.0
-uvicorn[standard]==0.29.0
-python-multipart==0.0.9
-pydantic==2.7.1
-
-# ── Environment variables ────────────────────────────────────────────────────
-python-dotenv==1.0.1
-
-# ── LLM (uncomment when ready) ───────────────────────────────────────────────
-# groq==0.8.0
-
-# ── Audio transcription (uncomment when ready) ───────────────────────────────
-# openai-whisper==20231117
-
-# ── Video / CNN model (uncomment when ready) ─────────────────────────────────
-# tensorflow==2.16.1
-# opencv-python-headless==4.9.0.80
-# numpy==1.26.4
-
-tensorflow
-opencv-python-headless
+tensorflow==2.19.0
+opencv-contrib-python
 numpy
 fastapi
 uvicorn
 python-multipart
 pydantic
 python-dotenv
+openai-whisper
+groq

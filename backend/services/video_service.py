@@ -12,9 +12,19 @@ import cv2
 import numpy as np
 from tensorflow.keras.models import load_model
 
-EMOTION_LABELS = ["angry", "disgusted", "fearful", "happy", "neutral", "sad", "surprise"]
+EMOTION_LABELS = [
+    "angry",
+    "disgusted",
+    "fearful",
+    "happy",
+    "neutral",
+    "sad",
+    "surprise",
+]
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "models", "emotion_model.keras")
+MODEL_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "models", "emotion_model.keras"
+)
 
 _model = None
 _face_cascade = None
@@ -42,17 +52,26 @@ def _compute_combined_emotions(avg_array):
     """Maps 7 base emotions -> 5 combined session metrics (from training notebook)."""
     E = np.array(avg_array, dtype=np.float32)
 
-    labels = ["Confidence", "Nervousness", "Engagement", "Frustration", "Emotional_Stability"]
+    labels = [
+        "Confidence",
+        "Nervousness",
+        "Engagement",
+        "Frustration",
+        "Emotional_Stability",
+    ]
 
-    W = np.array([
-        [0.05, 0.20, 0.05, 0.50, 0.05],
-        [0.00, 0.10, 0.00, 0.30, 0.00],
-        [0.05, 0.45, 0.05, 0.05, 0.05],
-        [0.45, 0.00, 0.50, 0.00, 0.25],
-        [0.35, 0.10, 0.25, 0.05, 0.55],
-        [0.00, 0.10, 0.00, 0.10, 0.05],
-        [0.10, 0.05, 0.15, 0.00, 0.05]
-    ], dtype=np.float32)
+    W = np.array(
+        [
+            [0.05, 0.20, 0.05, 0.50, 0.05],
+            [0.00, 0.10, 0.00, 0.30, 0.00],
+            [0.05, 0.45, 0.05, 0.05, 0.05],
+            [0.45, 0.00, 0.50, 0.00, 0.25],
+            [0.35, 0.10, 0.25, 0.05, 0.55],
+            [0.00, 0.10, 0.00, 0.10, 0.05],
+            [0.10, 0.05, 0.15, 0.00, 0.05],
+        ],
+        dtype=np.float32,
+    )
 
     W = W / np.sum(W, axis=0, keepdims=True)
     combined = (E @ W) * 100
@@ -62,47 +81,74 @@ def _compute_combined_emotions(avg_array):
 
 def analyze_emotion(video_bytes: bytes, filename: str = "video.webm") -> dict:
     ext = os.path.splitext(filename)[-1] or ".webm"
+
     with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
         tmp.write(video_bytes)
         tmp_path = tmp.name
 
+    cap = None
+
     try:
         model = _get_model()
         face_cascade = _get_face_cascade()
+
+        if face_cascade.empty():
+            raise RuntimeError(
+                f"Failed to load Haar cascade from: "
+                f"{cv2.data.haarcascades}haarcascade_frontalface_default.xml"
+            )
+
         cap = cv2.VideoCapture(tmp_path)
+
+        if not cap.isOpened():
+            raise RuntimeError(f"Unable to open video: {tmp_path}")
 
         sum_dic = {label: 0 for label in EMOTION_LABELS}
         total = 0
 
-        while cap.isOpened():
+        while True:
             ret, frame = cap.read()
             if not ret:
                 break
 
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
             faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
 
-            for (x, y, w, h) in faces:
-                roi = gray[y:y + h, x:x + w]
-                cropped = np.expand_dims(np.expand_dims(cv2.resize(roi, (48, 48)), -1), 0)
+            for x, y, w, h in faces:
+                roi = gray[y : y + h, x : x + w]
+                roi = cv2.resize(roi, (48, 48))
+                roi = np.expand_dims(np.expand_dims(roi, -1), 0)
 
-                pred = model.predict(cropped, verbose=0)
+                pred = model.predict(roi, verbose=0)
                 maxindex = int(np.argmax(pred))
+
                 sum_dic[EMOTION_LABELS[maxindex]] += 1
                 total += 1
 
-        cap.release()
-
         if total == 0:
-            base_emotions = {label: 0.0 for label in EMOTION_LABELS}
-            combined = {k: 0.0 for k in ["Confidence", "Nervousness", "Engagement", "Frustration", "Emotional_Stability"]}
-            return {**base_emotions, **combined}
+            base = {label: 0.0 for label in EMOTION_LABELS}
+            combined = {
+                "Confidence": 0.0,
+                "Nervousness": 0.0,
+                "Engagement": 0.0,
+                "Frustration": 0.0,
+                "Emotional_Stability": 0.0,
+            }
+            return {**base, **combined}
 
         avg_dic = {label: sum_dic[label] / total for label in EMOTION_LABELS}
-        avg_array = [avg_dic[label] for label in EMOTION_LABELS]
-        combined = _compute_combined_emotions(avg_array)
+        combined = _compute_combined_emotions(
+            [avg_dic[label] for label in EMOTION_LABELS]
+        )
 
         return {**avg_dic, **combined}
 
     finally:
-        os.unlink(tmp_path)
+        if cap is not None:
+            cap.release()
+
+        cv2.destroyAllWindows()
+
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
