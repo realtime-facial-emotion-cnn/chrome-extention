@@ -20,6 +20,18 @@ function formatLabel(value) {
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
+function formatBytes(value) {
+  if (typeof value !== "number" || Number.isNaN(value)) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  let size = value;
+  let index = 0;
+  while (size >= 1024 && index < units.length - 1) {
+    size /= 1024;
+    index += 1;
+  }
+  return `${size.toFixed(1)} ${units[index]}`;
+}
+
 const phaseIcons = {
   Queued: "⏳",
   Transcribing: "🎤",
@@ -62,11 +74,32 @@ async function createFileFromPayload(payload) {
   }
 
   if (payload.dataUrl) {
-    const response = await fetch(payload.dataUrl);
-    const uploadBlob = await response.blob();
-    return new File([uploadBlob], payload.fileName || "recording.webm", {
-      type: payload.type || uploadBlob.type || "video/webm",
-    });
+    try {
+      // Parse data URL format: data:type;base64,<data>
+      const [header, encoded] = payload.dataUrl.split(",");
+      if (!encoded) {
+        console.error("[app] invalid data URL format - no encoded data");
+        return null;
+      }
+
+      const mimeMatch = header.match(/data:(.*?);/);
+      const mimeType = mimeMatch?.[1] || payload.type || "video/webm";
+
+      // Decode base64 to binary string, then to bytes
+      const binary = atob(encoded);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+
+      const blob = new Blob([bytes], { type: mimeType });
+      return new File([blob], payload.fileName || "recording.webm", {
+        type: mimeType,
+      });
+    } catch (error) {
+      console.error("[app] error processing data URL", error);
+      return null;
+    }
   }
 
   if (payload.data) {
@@ -189,6 +222,12 @@ function App() {
     };
 
     const handleWindowMessage = async (event) => {
+      console.log("[app] window message received", {
+        type: event?.data?.type,
+        hasPayload: !!event?.data?.payload,
+        keys: Object.keys(event?.data || {}),
+      });
+
       const pending =
         event?.data?.type === "meeting-video-payload"
           ? event.data.payload
@@ -201,6 +240,59 @@ function App() {
       console.log("[app] received payload via postMessage", pending);
       window.__pendingUploadPayload = pending;
       await handlePendingUpload(pending);
+    };
+
+    // ------------------------------------------------------------------
+    // Chrome extension hand-off: the "Tab Recorder" extension records the
+    // active tab, then opens this page and injects a
+    // "tab-recorder:recording-ready" event on `window` containing a
+    // page-local `blob:` URL for the finished recording. We fetch that
+    // blob URL, convert it into an ArrayBuffer, and route it through the
+    // same `handlePendingUpload` pipeline used by the other hand-off
+    // methods above (it already knows how to build a File from
+    // `payload.data`).
+    // ------------------------------------------------------------------
+    const handleRecordingReady = async (event) => {
+      const detail = event?.detail;
+      console.log("[app] tab-recorder recording-ready event fired", {
+        hasBlobUrl: !!detail?.blobUrl,
+        mimeType: detail?.mimeType,
+        size: detail?.size,
+      });
+
+      if (!detail?.blobUrl) {
+        console.log("[app] recording-ready event missing blobUrl");
+        return;
+      }
+
+      try {
+        const response = await fetch(detail.blobUrl);
+        const blob = await response.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+
+        const payload = {
+          data: arrayBuffer,
+          type: detail.mimeType || blob.type || "video/webm",
+          fileName: "recording.webm",
+        };
+
+        window.__pendingUploadPayload = payload;
+        await handlePendingUpload(payload);
+      } catch (error) {
+        console.error(
+          "[app] failed to process tab-recorder recording-ready payload",
+          error,
+        );
+      } finally {
+        // Blob URLs are only valid for the lifetime of the page that
+        // created them (the extension's injected script), but releasing
+        // our own reference is good hygiene once we're done with it.
+        try {
+          URL.revokeObjectURL(detail.blobUrl);
+        } catch {
+          // ignore
+        }
+      }
     };
 
     const checkPayloadMarker = () => {
@@ -236,9 +328,19 @@ function App() {
     }, 300);
 
     console.log("[app] useEffect mounted, checking for initial payload");
+    console.log("[app] event listeners registered:", {
+      hasWindowPayloadListener: true,
+      hasMessageListener: true,
+      hasRecordingReadyListener: true,
+      retryLoopInterval: 300,
+    });
     void handlePendingUpload();
     window.addEventListener("meeting-video-payload", handlePayloadEvent);
     window.addEventListener("message", handleWindowMessage);
+    window.addEventListener(
+      "tab-recorder:recording-ready",
+      handleRecordingReady,
+    );
 
     return () => {
       if (pollingRef.current) {
@@ -247,6 +349,10 @@ function App() {
       window.clearInterval(retryLoop);
       window.removeEventListener("meeting-video-payload", handlePayloadEvent);
       window.removeEventListener("message", handleWindowMessage);
+      window.removeEventListener(
+        "tab-recorder:recording-ready",
+        handleRecordingReady,
+      );
     };
   }, []);
 
@@ -527,7 +633,9 @@ function App() {
           </div>
 
           <form className="upload-card" onSubmit={handleSubmit}>
-            <label className="file-dropzone">
+            <label
+              className={`file-dropzone ${selectedFile ? "has-file" : ""}`}
+            >
               <input type="file" accept="video/*" onChange={handleFileChange} />
               <svg
                 className="dropzone-icon"
@@ -543,10 +651,39 @@ function App() {
                   d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"
                 />
               </svg>
-              <span className="dropzone-title">Select a video</span>
-              <span className="dropzone-subtitle">
-                MP4, WebM, MOV or other common formats.
+              <span className="dropzone-title">
+                {selectedFile ? "Selected recording" : "Select a video"}
               </span>
+              <span className="dropzone-subtitle">
+                {selectedFile
+                  ? "This file is ready for upload."
+                  : "MP4, WebM, MOV or other common formats."}
+              </span>
+
+              {selectedFile ? (
+                <div className="dropzone-file-info">
+                  <span className="file-badge">
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M15 10.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-4.5" />
+                      <path d="M15 10.5 20 7v10l-5-3.5" />
+                    </svg>
+                    {selectedFile.name}
+                  </span>
+                  <span className="file-meta">
+                    {formatBytes(selectedFile.size)} •{" "}
+                    {selectedFile.type || "Video file"}
+                  </span>
+                </div>
+              ) : null}
             </label>
 
             <button
